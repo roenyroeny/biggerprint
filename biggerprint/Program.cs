@@ -16,11 +16,8 @@ namespace biggerprint
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            new splash().ShowDialog();
             Application.Run(new Form1());
         }
-
-
-
-
     }
 }
