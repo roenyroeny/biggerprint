@@ -43,7 +43,7 @@
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(6, 86);
+            this.label2.Location = new System.Drawing.Point(237, 43);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(32, 13);
             this.label2.TabIndex = 1;
@@ -51,13 +51,13 @@
             // 
             // numericUpDown1
             // 
-            this.numericUpDown1.DecimalPlaces = 2;
+            this.numericUpDown1.DecimalPlaces = 4;
             this.numericUpDown1.Increment = new decimal(new int[] {
             1,
             0,
             0,
             131072});
-            this.numericUpDown1.Location = new System.Drawing.Point(48, 84);
+            this.numericUpDown1.Location = new System.Drawing.Point(279, 41);
             this.numericUpDown1.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -69,7 +69,7 @@
             0,
             65536});
             this.numericUpDown1.Name = "numericUpDown1";
-            this.numericUpDown1.Size = new System.Drawing.Size(88, 20);
+            this.numericUpDown1.Size = new System.Drawing.Size(120, 20);
             this.numericUpDown1.TabIndex = 2;
             this.numericUpDown1.Value = new decimal(new int[] {
             100,
@@ -88,7 +88,7 @@
             this.groupBox1.Controls.Add(this.label2);
             this.groupBox1.Location = new System.Drawing.Point(12, 12);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(388, 144);
+            this.groupBox1.Size = new System.Drawing.Size(432, 144);
             this.groupBox1.TabIndex = 3;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Scale Error";
@@ -96,21 +96,21 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(3, 62);
+            this.label3.Location = new System.Drawing.Point(234, 19);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(133, 13);
+            this.label3.Size = new System.Drawing.Size(134, 13);
             this.label3.TabIndex = 6;
-            this.label3.Text = "measured dimensions (mm)";
+            this.label3.Text = "Measured dimensions (mm)";
             // 
             // numericUpDown2
             // 
-            this.numericUpDown2.DecimalPlaces = 2;
+            this.numericUpDown2.DecimalPlaces = 4;
             this.numericUpDown2.Increment = new decimal(new int[] {
             1,
             0,
             0,
             131072});
-            this.numericUpDown2.Location = new System.Drawing.Point(48, 110);
+            this.numericUpDown2.Location = new System.Drawing.Point(279, 67);
             this.numericUpDown2.Maximum = new decimal(new int[] {
             1000,
             0,
@@ -122,7 +122,7 @@
             0,
             65536});
             this.numericUpDown2.Name = "numericUpDown2";
-            this.numericUpDown2.Size = new System.Drawing.Size(88, 20);
+            this.numericUpDown2.Size = new System.Drawing.Size(120, 20);
             this.numericUpDown2.TabIndex = 5;
             this.numericUpDown2.Value = new decimal(new int[] {
             100,
@@ -134,7 +134,7 @@
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(6, 112);
+            this.label1.Location = new System.Drawing.Point(237, 69);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(36, 13);
             this.label1.TabIndex = 4;
@@ -142,7 +142,7 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(6, 19);
+            this.button1.Location = new System.Drawing.Point(20, 19);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(162, 29);
             this.button1.TabIndex = 3;
@@ -154,7 +154,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
+            this.ClientSize = new System.Drawing.Size(456, 361);
             this.Controls.Add(this.groupBox1);
             this.Name = "Settings";
             this.ShowIcon = false;
