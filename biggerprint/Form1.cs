@@ -123,7 +123,7 @@ namespace biggerprint
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            SimpleDXF.Document doc = new SimpleDXF.Document("end.dxf");
+            SimpleDXF.Document doc = new SimpleDXF.Document("test.dxf");
             doc.Read();
             document = new Document(doc);
             document.CalculateBounds();
@@ -181,6 +181,8 @@ namespace biggerprint
 
         void HomeView()
         {
+            if (document.width == 0 || document.height == 0)
+                return;
             view.Reset();
             view.Translate(document.left + document.width / 2, document.top + document.height / 2);
             view.Translate((float)p_view.Width / 2, (float)p_view.Height / 2);
@@ -242,6 +244,14 @@ namespace biggerprint
         private void printToolStripMenuItem_Click(object sender, EventArgs e)
         {
             PrintDialog dialog = new PrintDialog();
+            dialog.Document = GetPrintDocument(document);
+            if (dialog.ShowDialog() == DialogResult.OK)
+                dialog.Document.Print();
+        }
+
+        private void printPreviewToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            PrintPreviewDialog dialog = new PrintPreviewDialog();
             dialog.Document = GetPrintDocument(document);
             if (dialog.ShowDialog() == DialogResult.OK)
                 dialog.Document.Print();
