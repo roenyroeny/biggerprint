@@ -2,4 +2,4 @@
 
 A tool to help print things langer than 1 page files
 
-!()[media/screenshot.png]
+!(screenshot)[./media/screenshot.png]
