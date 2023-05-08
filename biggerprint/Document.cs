@@ -49,32 +49,32 @@ namespace biggerprint
 
 
                 minx = Math.Min(minx, (float)(a.Center.X + Math.Cos(start) * a.Radius));
-                miny = Math.Min(miny, (float)(a.Center.Y + Math.Sin(start) * a.Radius));
+                miny = Math.Min(miny, -(float)(a.Center.Y + Math.Sin(start) * a.Radius));
                 minx = Math.Min(minx, (float)(a.Center.X + Math.Cos(stop) * a.Radius));
-                miny = Math.Min(miny, (float)(a.Center.Y + Math.Sin(stop) * a.Radius));
+                miny = Math.Min(miny, -(float)(a.Center.Y + Math.Sin(stop) * a.Radius));
 
                 for (float v = 0; v < (float)Math.PI * 2.0f; v += (float)Math.PI / 2.0f)
                 {
                     if (v > start && v < stop)
                     {
                         minx = Math.Min(minx, (float)(a.Center.X + Math.Cos(v) * a.Radius));
-                        miny = Math.Min(miny, (float)(a.Center.Y + Math.Sin(v) * a.Radius));
+                        miny = Math.Min(miny, -(float)(a.Center.Y + Math.Sin(v) * a.Radius));
                         maxx = Math.Max(maxx, (float)(a.Center.X + Math.Cos(v) * a.Radius));
-                        maxy = Math.Max(maxy, (float)(a.Center.Y + Math.Sin(v) * a.Radius));
+                        maxy = Math.Max(maxy, -(float)(a.Center.Y + Math.Sin(v) * a.Radius));
                     }
                 }
             }
             foreach (var a in dxfdoc.Lines)
             {
                 minx = Math.Min(minx, (float)(a.P1.X));
-                miny = Math.Min(miny, (float)(a.P1.Y));
+                miny = Math.Min(miny, -(float)(a.P1.Y));
                 maxx = Math.Max(maxx, (float)(a.P1.X));
-                maxy = Math.Max(maxy, (float)(a.P1.Y));
+                maxy = Math.Max(maxy,- (float)(a.P1.Y));
 
                 minx = Math.Min(minx, (float)(a.P2.X));
-                miny = Math.Min(miny, (float)(a.P2.Y));
+                miny = Math.Min(miny, -(float)(a.P2.Y));
                 maxx = Math.Max(maxx, (float)(a.P2.X));
-                maxy = Math.Max(maxy, (float)(a.P2.Y));
+                maxy = Math.Max(maxy, -(float)(a.P2.Y));
             }
             foreach (var a in dxfdoc.Polylines)
             {
@@ -82,9 +82,9 @@ namespace biggerprint
                 foreach (var p in a.Vertexes)
                 {
                     minx = Math.Min(minx, (float)(p.Position.X));
-                    miny = Math.Min(miny, (float)(p.Position.Y));
+                    miny = Math.Min(miny, -(float)(p.Position.Y));
                     maxx = Math.Max(maxx, (float)(p.Position.X));
-                    maxy = Math.Max(maxy, (float)(p.Position.Y));
+                    maxy = Math.Max(maxy, -(float)(p.Position.Y));
                 }
             }
 
@@ -143,20 +143,20 @@ namespace biggerprint
 
             foreach (var a in dxfdoc.Arcs)
             {
-                var rect = new RectangleF((float)(a.Center.X - a.Radius), (float)(a.Center.Y - a.Radius), (float)a.Radius * 2.0f, (float)a.Radius * 2.0f);
+                var rect = new RectangleF((float)(a.Center.X - a.Radius), -(float)(a.Center.Y - a.Radius), (float)a.Radius * 2.0f, -(float)a.Radius * 2.0f);
                 g.DrawArc(Pens.Black, rect, (float)a.StartAngle, (float)(a.EndAngle - a.StartAngle));
             }
 
             foreach (var a in dxfdoc.Lines)
             {
-                g.DrawLine(Pens.Black, (float)a.P1.X, (float)a.P1.Y, (float)a.P2.X, (float)a.P2.Y);
+                g.DrawLine(Pens.Black, (float)a.P1.X, -(float)a.P1.Y, (float)a.P2.X, -(float)a.P2.Y);
             }
 
             foreach (var a in dxfdoc.Polylines)
             {
                 List<PointF> points = new List<PointF>();
                 foreach (var p in a.Vertexes)
-                    points.Add(new PointF((float)p.Position.X, (float)p.Position.Y));
+                    points.Add(new PointF((float)p.Position.X, -(float)p.Position.Y));
                 g.DrawPolygon(Pens.Black, points.ToArray());
             }
         }
