@@ -17,17 +17,19 @@ namespace biggerprint
 
         Document document = null;
 
-        SizeF pageSize = new SizeF();
-
+        SizeF pageRes;
+        SizeF pageSize
+        {
+            get { return new SizeF(pageRes.Width * Settings.scaleX, pageRes.Height * Settings.scaleY); }
+        }
         public Form1()
         {
             InitializeComponent();
             
             // figureout page size
             PrintDocument pdoc = new PrintDocument();
-            pageSize = Utility.Unfreedom(pdoc.DefaultPageSettings.PrintableArea.Size);
-            pageSize = new SizeF(pageSize.Width * Document.scaleX, pageSize.Height * Document.scaleY);
-
+            pageRes = Utility.Unfreedom(pdoc.DefaultPageSettings.PrintableArea.Size);
+            
             // no idea why this cant be done through the WYSIWYG editor
             {
                 showPages = new CheckBox();
@@ -89,44 +91,6 @@ namespace biggerprint
             v.TransformPoints(ps);
             return ps[0];
         }
-
-        public PrintDocument GetPrintDocument(Document doc)
-        {
-            PrintDocument pdoc = new PrintDocument();
-
-            int pageIndexX = 0;
-            int pageIndexY = 0;
-            int pageCountX = 0;
-            int pageCountY = 0;
-            pdoc.PrintPage += (object s, PrintPageEventArgs ev) =>
-            {
-                var pageSize = document.pageSize;
-
-                ev.HasMorePages = true;
-                if (pageIndexX == 0 && pageIndexY == 0)
-                {
-                    pageCountX = doc.PagesRequiredX(pageSize);
-                    pageCountY = doc.PagesRequiredY(pageSize);
-                }
-
-                Matrix mat = new Matrix();
-                var scale = Utility.Unfreedom(new SizeF(1, 1));
-                mat.Scale(1.0f / scale.Width, 1.0f / scale.Height); // unfreedom
-                mat.Translate(-pageIndexX * pageSize.Width - document.left, -pageIndexY * pageSize.Height - document.top);
-                doc.Render(ev.Graphics, mat, true, false);
-
-                pageIndexX++;
-                if (pageIndexX == pageCountX)
-                {
-                    pageIndexX = 0;
-                    pageIndexY++;
-                    if (pageIndexY == pageCountY)
-                        ev.HasMorePages = false;
-                }
-            };
-            return pdoc;
-        }
-
 
         private void Form1_Load(object sender, EventArgs e)
         {
@@ -242,7 +206,7 @@ namespace biggerprint
             if (document == null)
                 return;
             var dialog = new PrintPreviewDialog();
-            dialog.Document = GetPrintDocument(document);
+            dialog.Document = document.GetPrintDocument();
             dialog.ShowDialog();
         }
 
@@ -256,7 +220,7 @@ namespace biggerprint
             if (document == null)
                 return;
             PrintDialog dialog = new PrintDialog();
-            dialog.Document = GetPrintDocument(document);
+            dialog.Document = document.GetPrintDocument();
             if (dialog.ShowDialog() == DialogResult.OK)
                 dialog.Document.Print();
         }
@@ -266,7 +230,7 @@ namespace biggerprint
             if (document == null)
                 return;
             PrintPreviewDialog dialog = new PrintPreviewDialog();
-            dialog.Document = GetPrintDocument(document);
+            dialog.Document = document.GetPrintDocument();
             if (dialog.ShowDialog() == DialogResult.OK)
                 dialog.Document.Print();
         }
@@ -281,6 +245,11 @@ namespace biggerprint
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
         {
             document = null;
+        }
+
+        private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            new Settings().ShowDialog();
         }
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)

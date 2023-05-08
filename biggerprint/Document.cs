@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Printing;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -25,11 +26,8 @@ namespace biggerprint
         const double gridsize = 50;
         public float left = 0, top = 0;
         public float width = 150, height = 150;
-        public float boundsPadding = 10.0f; // 10mm
+        public float boundsPadding = 5.0f; // 5mm
 
-        // error scale. 1mm isnt exactly 1mm in reallife after printing
-        public const float scaleX = 0.9649f;
-        public const float scaleY = 0.9674f;
 
         Pen crossHatchPen = new Pen(Brushes.LightGray, 0.2f); // 0.2mm lines
         Pen pagePen = new Pen(Brushes.Red, 0.2f); // 0.4mm lines
@@ -69,7 +67,7 @@ namespace biggerprint
                 minx = Math.Min(minx, (float)(a.P1.X));
                 miny = Math.Min(miny, -(float)(a.P1.Y));
                 maxx = Math.Max(maxx, (float)(a.P1.X));
-                maxy = Math.Max(maxy,- (float)(a.P1.Y));
+                maxy = Math.Max(maxy, -(float)(a.P1.Y));
 
                 minx = Math.Min(minx, (float)(a.P2.X));
                 miny = Math.Min(miny, -(float)(a.P2.Y));
@@ -119,7 +117,6 @@ namespace biggerprint
 
         public void Render(Graphics g, Matrix transform = null, bool showCrossHatch = false, bool showPages = false)
         {
-            // g.ScaleTransform(1.0f / (float)scaleX, 1.0f / (float)scaleY); // do this externally
             if (transform != null)
                 g.MultiplyTransform(transform);
 
@@ -164,6 +161,41 @@ namespace biggerprint
                     points.Add(new PointF((float)p.Position.X, -(float)p.Position.Y));
                 g.DrawPolygon(Pens.Black, points.ToArray());
             }
+        }
+
+        public PrintDocument GetPrintDocument()
+        {
+            PrintDocument pdoc = new PrintDocument();
+
+            int pageIndexX = 0;
+            int pageIndexY = 0;
+            int pageCountX = 0;
+            int pageCountY = 0;
+            pdoc.PrintPage += (object s, PrintPageEventArgs ev) =>
+            {
+                ev.HasMorePages = true;
+                if (pageIndexX == 0 && pageIndexY == 0)
+                {
+                    pageCountX = PagesRequiredX(pageSize);
+                    pageCountY = PagesRequiredY(pageSize);
+                }
+
+                Matrix mat = new Matrix();
+                var scale = Utility.Unfreedom(new SizeF(1, 1));
+                mat.Scale(1.0f / scale.Width, 1.0f / scale.Height); // unfreedom
+                mat.Translate(-pageIndexX * pageSize.Width - left, -pageIndexY * pageSize.Height - top);
+                Render(ev.Graphics, mat, true, false);
+
+                pageIndexX++;
+                if (pageIndexX == pageCountX)
+                {
+                    pageIndexX = 0;
+                    pageIndexY++;
+                    if (pageIndexY == pageCountY)
+                        ev.HasMorePages = false;
+                }
+            };
+            return pdoc;
         }
     }
 }

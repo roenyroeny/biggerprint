@@ -10,9 +10,23 @@ namespace biggerprint
 {
     internal class Utility
     {
+        public static float Freedom(float s)
+        {
+            return s / 0.254f;
+        }
+
+        public static float Unfreedom(float s)
+        {
+            return s * 0.254f;
+        }
+        public static SizeF Freedom(SizeF s)
+        {
+            return new SizeF(Freedom(s.Width), Freedom(s.Height));
+        }
+
         public static SizeF Unfreedom(SizeF s)
         {
-            return new SizeF(s.Width * 0.254f, s.Height * 0.254f);
+            return new SizeF(Unfreedom(s.Width), Unfreedom(s.Height));
         }
     }
 }
