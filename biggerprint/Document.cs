@@ -101,6 +101,7 @@ namespace biggerprint
             height = maxy - miny;
         }
 
+
         public int PagesRequiredX(SizeF pageSize)
         {
             return (int)Math.Ceiling((double)(width / pageSize.Width));
@@ -123,6 +124,8 @@ namespace biggerprint
                 g.MultiplyTransform(transform);
 
             if (showCrossHatch)
+            {
+                g.SetClip(new RectangleF(left, top, width, height));
                 for (double x = left; x < left + width; x += gridsize)
                 {
                     for (double y = top; y < top + height; y += gridsize)
@@ -131,6 +134,8 @@ namespace biggerprint
                         g.DrawLine(crossHatchPen, (float)(x + gridsize), (float)y, (float)x, (float)(y + gridsize));
                     }
                 }
+                g.ResetClip();
+            }
 
             if (showPages && pageSize.Width != 0 && pageSize.Height != 0)
                 for (double x = left; x < left + width; x += pageSize.Width)

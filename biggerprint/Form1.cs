@@ -15,11 +15,18 @@ namespace biggerprint
         CheckBox showPages;
         CheckBox showCrossHatching;
 
-        Document document;
+        Document document = null;
+
+        SizeF pageSize = new SizeF();
+
         public Form1()
         {
-            document = new Document();
             InitializeComponent();
+            
+            // figureout page size
+            PrintDocument pdoc = new PrintDocument();
+            pageSize = Utility.Unfreedom(pdoc.DefaultPageSettings.PrintableArea.Size);
+            pageSize = new SizeF(pageSize.Width * Document.scaleX, pageSize.Height * Document.scaleY);
 
             // no idea why this cant be done through the WYSIWYG editor
             {
@@ -123,13 +130,14 @@ namespace biggerprint
 
         private void Form1_Load(object sender, EventArgs e)
         {
+#if false
             SimpleDXF.Document doc = new SimpleDXF.Document("test.dxf");
             doc.Read();
             document = new Document(doc);
             document.CalculateBounds();
             var pdoc = GetPrintDocument(document);
-            document.pageSize = Utility.Unfreedom(pdoc.DefaultPageSettings.PrintableArea.Size);
-            document.pageSize = new SizeF(document.pageSize.Width * Document.scaleX, document.pageSize.Height * Document.scaleY);
+            document.pageSize = pageSize;
+#endif
             HomeView();
         }
 
@@ -181,7 +189,7 @@ namespace biggerprint
 
         void HomeView()
         {
-            if (document.width == 0 || document.height == 0)
+            if (document == null || document.width == 0 || document.height == 0)
                 return;
             view.Reset();
             view.Translate(document.left + document.width / 2, document.top + document.height / 2);
@@ -231,6 +239,8 @@ namespace biggerprint
 
         private void button2_Click(object sender, EventArgs e)
         {
+            if (document == null)
+                return;
             var dialog = new PrintPreviewDialog();
             dialog.Document = GetPrintDocument(document);
             dialog.ShowDialog();
@@ -243,6 +253,8 @@ namespace biggerprint
 
         private void printToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (document == null)
+                return;
             PrintDialog dialog = new PrintDialog();
             dialog.Document = GetPrintDocument(document);
             if (dialog.ShowDialog() == DialogResult.OK)
@@ -251,6 +263,8 @@ namespace biggerprint
 
         private void printPreviewToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (document == null)
+                return;
             PrintPreviewDialog dialog = new PrintPreviewDialog();
             dialog.Document = GetPrintDocument(document);
             if (dialog.ShowDialog() == DialogResult.OK)
@@ -259,7 +273,27 @@ namespace biggerprint
 
         private void p_view_Paint(object sender, PaintEventArgs e)
         {
+            if (document == null)
+                return;
             document.Render(e.Graphics, view, showCrossHatching.Checked, showPages.Checked);
+        }
+
+        private void newToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            document = null;
+        }
+
+        private void loadToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            openFileDialog1.CheckFileExists = true;
+            if(openFileDialog1.ShowDialog()== DialogResult.OK)
+            {
+                SimpleDXF.Document doc = new SimpleDXF.Document(openFileDialog1.FileName);
+                doc.Read();
+                document = new Document(doc);
+                document.pageSize = pageSize;
+                document.CalculateBounds();
+            }
         }
     }
 }
