@@ -25,11 +25,11 @@ namespace biggerprint
         public Form1()
         {
             InitializeComponent();
-            
+
             // figureout page size
             PrintDocument pdoc = new PrintDocument();
             pageRes = Utility.Unfreedom(pdoc.DefaultPageSettings.PrintableArea.Size);
-            
+
             // no idea why this cant be done through the WYSIWYG editor
             {
                 showPages = new CheckBox();
@@ -62,6 +62,13 @@ namespace biggerprint
 
             (p_view as Control).KeyDown += Form1_KeyDown;
             (p_view as Control).KeyUp += Form1_KeyUp;
+
+
+
+
+#if DEBUG
+            Import("end.dxf");
+#endif
         }
 
         private void CheckedChanged(object sender, EventArgs e)
@@ -155,11 +162,11 @@ namespace biggerprint
         {
             if (document == null || document.width == 0 || document.height == 0)
                 return;
-            view.Reset();
-            view.Translate(document.left + document.width / 2, document.top + document.height / 2);
-            view.Translate((float)p_view.Width / 2, (float)p_view.Height / 2);
             float s = Math.Min(p_view.Width / document.width, p_view.Height / document.height) * 0.75f;
+            view.Reset();
+            view.Translate((float)p_view.Width / 2, (float)p_view.Height / 2);
             view.Scale(s, s);
+            view.Translate(-(document.left + document.width / 2), -(document.top + document.height / 2));
             p_view.Invalidate();
         }
 
@@ -250,19 +257,30 @@ namespace biggerprint
         private void settingsToolStripMenuItem_Click(object sender, EventArgs e)
         {
             new Settings().ShowDialog();
+            if (document == null)
+                return;
+            document.pageSize = pageSize;
+            document.CalculateBounds();
+            HomeView();
         }
 
         private void loadToolStripMenuItem_Click(object sender, EventArgs e)
         {
             openFileDialog1.CheckFileExists = true;
-            if(openFileDialog1.ShowDialog()== DialogResult.OK)
+            if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                SimpleDXF.Document doc = new SimpleDXF.Document(openFileDialog1.FileName);
-                doc.Read();
-                document = new Document(doc);
-                document.pageSize = pageSize;
-                document.CalculateBounds();
+                Import(openFileDialog1.FileName);
             }
+        }
+
+        void Import(string file)
+        {
+            SimpleDXF.Document doc = new SimpleDXF.Document(file);
+            doc.Read();
+            document = new Document(doc);
+            document.pageSize = pageSize;
+            document.CalculateBounds();
+            HomeView();
         }
     }
 }

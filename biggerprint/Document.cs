@@ -3,10 +3,13 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+using SimpleDXF;
 
 namespace biggerprint
 {
@@ -40,27 +43,16 @@ namespace biggerprint
 
             foreach (var a in dxfdoc.Arcs)
             {
-                float start = (float)a.StartAngle / 57.2957795f;
-                float stop = (float)a.EndAngle / 57.2957795f;
-                start %= ((float)Math.PI * 2.0f);
-                stop %= ((float)Math.PI * 2.0f);
+                float start = Utility.DegToRad((float)a.StartAngle);
+                float stop = Utility.DegToRad((float)a.EndAngle);
 
+                var rect = new RectangleF((float)a.Center.X + (float)a.Radius, (float)a.Center.Y + (float)a.Radius, (float)a.Radius * 2.0f, (float)a.Radius * 2.0f);
+                var bounds = Utility.GetArcBounds(rect, start, stop-start);
 
-                minx = Math.Min(minx, (float)(a.Center.X + Math.Cos(start) * a.Radius));
-                miny = Math.Min(miny, -(float)(a.Center.Y + Math.Sin(start) * a.Radius));
-                minx = Math.Min(minx, (float)(a.Center.X + Math.Cos(stop) * a.Radius));
-                miny = Math.Min(miny, -(float)(a.Center.Y + Math.Sin(stop) * a.Radius));
-
-                for (float v = 0; v < (float)Math.PI * 2.0f; v += (float)Math.PI / 2.0f)
-                {
-                    if (v > start && v < stop)
-                    {
-                        minx = Math.Min(minx, (float)(a.Center.X + Math.Cos(v) * a.Radius));
-                        miny = Math.Min(miny, -(float)(a.Center.Y + Math.Sin(v) * a.Radius));
-                        maxx = Math.Max(maxx, (float)(a.Center.X + Math.Cos(v) * a.Radius));
-                        maxy = Math.Max(maxy, -(float)(a.Center.Y + Math.Sin(v) * a.Radius));
-                    }
-                }
+                minx = Math.Min(minx, bounds.Left);
+                miny = Math.Min(miny, bounds.Top);
+                maxx = Math.Max(maxx, bounds.Right);
+                maxy = Math.Max(maxy, bounds.Bottom);
             }
             foreach (var a in dxfdoc.Lines)
             {
@@ -74,18 +66,26 @@ namespace biggerprint
                 maxx = Math.Max(maxx, (float)(a.P2.X));
                 maxy = Math.Max(maxy, -(float)(a.P2.Y));
             }
-            foreach (var a in dxfdoc.Polylines)
+            foreach (var p in dxfdoc.Polylines)
             {
-                List<PointF> points = new List<PointF>();
-                foreach (var p in a.Vertexes)
+                for (int i = 0; i < p.Vertexes.Count; i++)
                 {
-                    minx = Math.Min(minx, (float)(p.Position.X));
-                    miny = Math.Min(miny, -(float)(p.Position.Y));
-                    maxx = Math.Max(maxx, (float)(p.Position.X));
-                    maxy = Math.Max(maxy, -(float)(p.Position.Y));
+                    var a = p.Vertexes[i];
+                    var b = p.Vertexes[(i + 1) % p.Vertexes.Count];
+                    PointF A = new PointF((float)a.Position.X, -(float)a.Position.Y);
+                    PointF B = new PointF((float)b.Position.X, -(float)b.Position.Y);
+
+                    if (i < p.Vertexes.Count - 1 || p.Closed)
+                    {
+                        float bulge = (float)p.Vertexes[i].Bulge;
+                        var bounds = Utility.GetBulgedLineBounds(A, B, bulge);
+                        minx = Math.Min(minx, bounds.Left);
+                        miny = Math.Min(miny, bounds.Top);
+                        maxx = Math.Max(maxx, bounds.Right);
+                        maxy = Math.Max(maxy, bounds.Bottom);
+                    }
                 }
             }
-
 
             minx -= boundsPadding;
             miny -= boundsPadding;
@@ -134,7 +134,8 @@ namespace biggerprint
                 g.ResetClip();
             }
 
-            if (showPages && pageSize.Width != 0 && pageSize.Height != 0)
+            if (showPages)
+            {
                 for (double x = left; x < left + width; x += pageSize.Width)
                 {
                     for (double y = top; y < top + height; y += pageSize.Height)
@@ -142,6 +143,7 @@ namespace biggerprint
                         g.DrawRectangle(pagePen, (float)x, (float)y, pageSize.Width, pageSize.Height);
                     }
                 }
+            }
 
             foreach (var a in dxfdoc.Arcs)
             {
@@ -154,12 +156,29 @@ namespace biggerprint
                 g.DrawLine(Pens.Black, (float)a.P1.X, -(float)a.P1.Y, (float)a.P2.X, -(float)a.P2.Y);
             }
 
-            foreach (var a in dxfdoc.Polylines)
+            foreach (var p in dxfdoc.Polylines)
             {
-                List<PointF> points = new List<PointF>();
-                foreach (var p in a.Vertexes)
-                    points.Add(new PointF((float)p.Position.X, -(float)p.Position.Y));
-                g.DrawPolygon(Pens.Black, points.ToArray());
+                GraphicsPath path = new GraphicsPath();
+                for (int i = 0; i < p.Vertexes.Count; i++)
+                {
+                    var a = p.Vertexes[i];
+                    var b = p.Vertexes[(i + 1) % p.Vertexes.Count];
+                    PointF A = new PointF((float)a.Position.X, -(float)a.Position.Y);
+                    PointF B = new PointF((float)b.Position.X, -(float)b.Position.Y);
+
+                    if (i < p.Vertexes.Count - 1 || p.Closed)
+                    {
+                        float bulge = (float)p.Vertexes[i].Bulge;
+
+                        if (i == 2)
+                            continue;
+
+                        Utility.DrawBulgedLine(g, Pens.Black, A, B, bulge);
+
+                        var rect = Utility.GetBulgedLineBounds(A, B, bulge);
+                        g.DrawRectangle(Pens.Green, rect.X, rect.Y, rect.Width, rect.Height);
+                    }
+                }
             }
         }
 

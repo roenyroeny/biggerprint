@@ -80,12 +80,13 @@ namespace biggerprint
 
             pdoc.PrintPage += (object s, PrintPageEventArgs ev) =>
             {
-                // 100 x 100 mm rectangle
                 float x = (float)(ev.PageBounds.X + ev.PageBounds.Width / 2);
                 float y = (float)(ev.PageBounds.Y + ev.PageBounds.Height / 2);
                 float width = Utility.Freedom(callibrationRectSize);
                 float height = Utility.Freedom(callibrationRectSize);
                 ev.Graphics.DrawRectangle(Pens.Black, x - width / 2, y - height / 2, width, height);
+                float offset = Utility.Freedom(5);
+                ev.Graphics.DrawString("Measure me!", Font, Brushes.DarkGray, x - width / 2 + offset, y - height / 2 + offset);
                 ev.HasMorePages = false;
             };
             return pdoc;
@@ -96,14 +97,19 @@ namespace biggerprint
             sizeX = (float)numericUpDown1.Value;
         }
 
-        private void Settings_FormClosing(object sender, FormClosingEventArgs e)
-        {
-            SaveSettings();
-        }
-
         private void numericUpDown2_ValueChanged(object sender, EventArgs e)
         {
             sizeY = (float)numericUpDown1.Value;
+        }
+
+        private void Settings_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void Settings_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            SaveSettings();
         }
     }
 }
