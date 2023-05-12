@@ -44,6 +44,7 @@
             // 
             // p_view
             // 
+            this.p_view.BackColor = System.Drawing.SystemColors.ControlDark;
             this.p_view.Dock = System.Windows.Forms.DockStyle.Fill;
             this.p_view.Location = new System.Drawing.Point(0, 24);
             this.p_view.Name = "p_view";

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
-using System.Windows.Forms;
 
 namespace biggerprint
 {
@@ -16,8 +15,19 @@ namespace biggerprint
         const double gridsize = 50;
         public AABB bounds = AABB.Empty();
         public float boundsPadding = 5.0f; // 5mm
+        public AABB pagesBounds
+        {
+            get
+            {
+                float w = PagesRequiredX(pageSize) * pageSize.Width;
+                float h = PagesRequiredY(pageSize) * pageSize.Height;
+                float cx = (bounds.minx + bounds.maxx) / 2.0f;
+                float cy = (bounds.miny + bounds.maxy) / 2.0f;
+                return new AABB(cx - w / 2.0f, cy - h / 2.0f, cx + w / 2.0f, cy + h / 2.0f);
+            }
+        }
 
-        Pen crossHatchPen = new Pen(Brushes.LightGray, 0.2f); // 0.2mm lines
+        Pen crossHatchPen = new Pen(Brushes.Gray, 0.2f); // 0.2mm lines
         Pen pagePen = new Pen(Brushes.Red, 0.2f); // 0.4mm lines
 
         public List<Element> elements = new List<Element>();
@@ -63,15 +73,19 @@ namespace biggerprint
             if (transform != null)
                 g.MultiplyTransform(transform);
 
+            var pagebounds = pagesBounds;
+            g.FillRectangle(Brushes.LightGray, pagebounds.RectangleF);
+
             foreach (var e in elements)
                 e.Render(g);
 
             if (showCrossHatch)
             {
-                g.SetClip(bounds.RectangleF);
-                for (double y = bounds.miny; y < bounds.maxy; y += gridsize)
+                g.SetClip(pagesBounds.RectangleF);
+
+                for (double y = pagebounds.miny; y < pagebounds.maxy - pagesBounds.width * 0.01f; y += gridsize)
                 {
-                    for (double x = bounds.minx; x < bounds.maxx; x += gridsize)
+                    for (double x = pagebounds.minx; x < pagebounds.maxx - pagesBounds.height * 0.01f; x += gridsize)
                     {
                         g.DrawLine(crossHatchPen, (float)x, (float)y, (float)(x + gridsize), (float)(y + gridsize));
                         g.DrawLine(crossHatchPen, (float)(x + gridsize), (float)y, (float)x, (float)(y + gridsize));
@@ -82,9 +96,9 @@ namespace biggerprint
 
             if (showPages)
             {
-                for (double y = bounds.miny; y < bounds.maxy; y += pageSize.Height)
+                for (double y = pagebounds.miny; y < pagebounds.maxy; y += pageSize.Height)
                 {
-                    for (double x = bounds.minx; x < bounds.maxx; x += pageSize.Width)
+                    for (double x = pagebounds.minx; x < pagebounds.maxx; x += pageSize.Width)
                     {
                         g.DrawRectangle(pagePen, (float)x, (float)y, pageSize.Width, pageSize.Height);
                     }
@@ -112,7 +126,7 @@ namespace biggerprint
                 Matrix mat = new Matrix();
                 var scale = Utility.Unfreedom(new SizeF(1, 1));
                 mat.Scale(1.0f / scale.Width, 1.0f / scale.Height); // unfreedom
-                mat.Translate(-pageIndexX * pageSize.Width -bounds.minx, -pageIndexY * pageSize.Height - bounds.miny);
+                mat.Translate(-pageIndexX * pageSize.Width - bounds.minx, -pageIndexY * pageSize.Height - bounds.miny);
                 Render(ev.Graphics, mat, true, false);
 
                 pageIndexX++;

@@ -100,15 +100,7 @@ namespace biggerprint
 
         private void Form1_Load(object sender, EventArgs e)
         {
-#if false
-            SimpleDXF.Document doc = new SimpleDXF.Document("test.dxf");
-            doc.Read();
-            document = new Document(doc);
-            document.CalculateBounds();
-            var pdoc = GetPrintDocument(document);
-            document.pageSize = pageSize;
-#endif
-            HomeView();
+            ImportNewDocument("test.dxf");
         }
 
         private void panel1_MouseWheel(object sender, MouseEventArgs e)
@@ -268,15 +260,20 @@ namespace biggerprint
             openFileDialog1.CheckFileExists = true;
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                document = new Document();
-                document.pageSize = pageSize;
-
-                var element=Import(openFileDialog1.FileName);
-                document.elements.Add(element);
-
-                document.CalculateBounds();
-                HomeView();
+                ImportNewDocument(openFileDialog1.FileName);
             }
+        }
+
+        void ImportNewDocument(string file)
+        {
+            document = new Document();
+            document.pageSize = pageSize;
+
+            var element = Import(file);
+            document.elements.Add(element);
+
+            document.CalculateBounds();
+            HomeView();
         }
 
         Element Import(string file)
