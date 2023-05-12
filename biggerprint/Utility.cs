@@ -55,7 +55,7 @@ namespace biggerprint
         {
             if (Math.Abs(bulge) < 0.01f)
             {
-                g.DrawLine(Pens.Black, A, B);
+                g.DrawLine(p, A, B);
             }
             else
             {

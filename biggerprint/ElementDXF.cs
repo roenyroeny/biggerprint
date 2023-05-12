@@ -13,6 +13,8 @@ namespace biggerprint
     {
         SimpleDXF.Document dxfdoc = null;
 
+        Pen pen = new Pen(Brushes.Black, 0.5f); // 500um wide line
+
         public ElementDXF(SimpleDXF.Document _dxfdoc)
         {
             dxfdoc = _dxfdoc;
@@ -60,12 +62,12 @@ namespace biggerprint
             foreach (var a in dxfdoc.Arcs)
             {
                 var rect = new RectangleF((float)(a.Center.X - a.Radius), -(float)(a.Center.Y - a.Radius), (float)a.Radius * 2.0f, -(float)a.Radius * 2.0f);
-                g.DrawArc(Pens.Black, rect, (float)a.StartAngle, (float)(a.EndAngle - a.StartAngle));
+                g.DrawArc(pen, rect, (float)a.StartAngle, (float)(a.EndAngle - a.StartAngle));
             }
 
             foreach (var a in dxfdoc.Lines)
             {
-                g.DrawLine(Pens.Black, (float)a.P1.X, -(float)a.P1.Y, (float)a.P2.X, -(float)a.P2.Y);
+                g.DrawLine(pen, (float)a.P1.X, -(float)a.P1.Y, (float)a.P2.X, -(float)a.P2.Y);
             }
 
             foreach (var p in dxfdoc.Polylines)
@@ -82,7 +84,7 @@ namespace biggerprint
                     {
                         float bulge = (float)p.Vertexes[i].Bulge;
 
-                        Utility.DrawBulgedLine(g, Pens.Black, A, B, bulge);
+                        Utility.DrawBulgedLine(g, pen, A, B, bulge);
                     }
                 }
             }

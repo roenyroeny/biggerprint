@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.Data.SqlTypes;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
@@ -10,8 +12,6 @@ namespace biggerprint
     {
         public Document() { }
 
-        public SizeF pageSize;
-
         const double gridsize = 50;
         public AABB bounds = AABB.Empty();
         public float boundsPadding = 5.0f; // 5mm
@@ -19,8 +19,8 @@ namespace biggerprint
         {
             get
             {
-                float w = PagesRequiredX(pageSize) * pageSize.Width;
-                float h = PagesRequiredY(pageSize) * pageSize.Height;
+                float w = PagesRequiredX * Settings.pageSizeCallibrated.Width;
+                float h = PagesRequiredY * Settings.pageSizeCallibrated.Height;
                 float cx = (bounds.minx + bounds.maxx) / 2.0f;
                 float cy = (bounds.miny + bounds.maxy) / 2.0f;
                 return new AABB(cx - w / 2.0f, cy - h / 2.0f, cx + w / 2.0f, cy + h / 2.0f);
@@ -52,29 +52,30 @@ namespace biggerprint
             bounds.maxy += boundsPadding;
         }
 
+        public int PagesRequiredX { get { return (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeCallibrated.Width)); } }
 
-        public int PagesRequiredX(SizeF pageSize)
+        public int PagesRequiredY { get { return (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeCallibrated.Height)); } }
+
+        public int PagesRequired { get { return PagesRequiredX * PagesRequiredY; } }
+
+        public AABB GetPage(int x, int y)
         {
-            return (int)Math.Ceiling((double)(bounds.width / pageSize.Width));
+            return new AABB(
+                pagesBounds.minx + Settings.pageSizeCallibrated.Width * x,
+                pagesBounds.miny + Settings.pageSizeCallibrated.Height * y,
+                pagesBounds.minx + Settings.pageSizeCallibrated.Width * (x + 1),
+                pagesBounds.miny + Settings.pageSizeCallibrated.Height * (y + 1)
+                );
         }
 
-        public int PagesRequiredY(SizeF pageSize)
-        {
-            return (int)Math.Ceiling((double)(bounds.height / pageSize.Height));
-        }
-
-        public int PagesRequired(SizeF pageSize)
-        {
-            return PagesRequiredX(pageSize) * PagesRequiredY(pageSize);
-        }
-
-        public void Render(Graphics g, Matrix transform = null, bool showCrossHatch = false, bool showPages = false)
+        public void Render(Graphics g, Matrix transform = null, bool preview = false, bool showCrossHatch = false, bool showPages = false)
         {
             if (transform != null)
                 g.MultiplyTransform(transform);
 
             var pagebounds = pagesBounds;
-            g.FillRectangle(Brushes.LightGray, pagebounds.RectangleF);
+            //if (preview)
+            //    g.FillRectangle(Brushes.LightGray, pagebounds.RectangleF);
 
             foreach (var e in elements)
                 e.Render(g);
@@ -96,11 +97,18 @@ namespace biggerprint
 
             if (showPages)
             {
-                for (double y = pagebounds.miny; y < pagebounds.maxy; y += pageSize.Height)
+                for (int y = 0; y < PagesRequiredY; y++)
                 {
-                    for (double x = pagebounds.minx; x < pagebounds.maxx; x += pageSize.Width)
+                    for (int x = 0; x < PagesRequiredX; x++)
                     {
-                        g.DrawRectangle(pagePen, (float)x, (float)y, pageSize.Width, pageSize.Height);
+                        var page = GetPage(x, y);
+                        g.DrawRectangles(pagePen, new[] { page.RectangleF });
+
+                        page.minx += 5.0f;
+                        page.miny += 5.0f;
+                        page.maxx -= 5.0f;
+                        page.maxy -= 5.0f;
+                        g.DrawRectangles(pagePen, new[] { page.RectangleF });
                     }
                 }
             }
@@ -112,22 +120,19 @@ namespace biggerprint
 
             int pageIndexX = 0;
             int pageIndexY = 0;
-            int pageCountX = 0;
-            int pageCountY = 0;
+            int pageCountX = PagesRequiredX;
+            int pageCountY = PagesRequiredY;
             pdoc.PrintPage += (object s, PrintPageEventArgs ev) =>
             {
                 ev.HasMorePages = true;
-                if (pageIndexX == 0 && pageIndexY == 0)
-                {
-                    pageCountX = PagesRequiredX(pageSize);
-                    pageCountY = PagesRequiredY(pageSize);
-                }
 
                 Matrix mat = new Matrix();
-                var scale = Utility.Unfreedom(new SizeF(1, 1));
-                mat.Scale(1.0f / scale.Width, 1.0f / scale.Height); // unfreedom
-                mat.Translate(-pageIndexX * pageSize.Width - bounds.minx, -pageIndexY * pageSize.Height - bounds.miny);
-                Render(ev.Graphics, mat, true, false);
+                var freedomScale = Utility.Unfreedom(new SizeF(1, 1));
+
+                AABB page = GetPage(pageIndexX, pageIndexY);
+                mat.Scale((float)ev.PageSettings.PrintableArea.Width / page.width, (float)ev.PageSettings.PrintableArea.Height / page.height);
+                mat.Translate(-page.minx, -page.miny);
+                Render(ev.Graphics, mat, false, true, false);
 
                 pageIndexX++;
                 if (pageIndexX == pageCountX)

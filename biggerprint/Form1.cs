@@ -16,19 +16,10 @@ namespace biggerprint
         CheckBox showCrossHatching;
 
         Document document = null;
-
-        SizeF pageRes;
-        SizeF pageSize
-        {
-            get { return new SizeF(pageRes.Width * Settings.scaleX, pageRes.Height * Settings.scaleY); }
-        }
+        
         public Form1()
         {
             InitializeComponent();
-
-            // figureout page size
-            PrintDocument pdoc = new PrintDocument();
-            pageRes = Utility.Unfreedom(pdoc.DefaultPageSettings.PrintableArea.Size);
 
             // no idea why this cant be done through the WYSIWYG editor
             {
@@ -100,7 +91,7 @@ namespace biggerprint
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            ImportNewDocument("test.dxf");
+            ImportNewDocument("end.dxf");
         }
 
         private void panel1_MouseWheel(object sender, MouseEventArgs e)
@@ -237,7 +228,7 @@ namespace biggerprint
         {
             if (document == null)
                 return;
-            document.Render(e.Graphics, view, showCrossHatching.Checked, showPages.Checked);
+            document.Render(e.Graphics, view, true, showCrossHatching.Checked, showPages.Checked);
         }
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
@@ -250,7 +241,6 @@ namespace biggerprint
             new Settings().ShowDialog();
             if (document == null)
                 return;
-            document.pageSize = pageSize;
             document.CalculateBounds();
             HomeView();
         }
@@ -267,7 +257,6 @@ namespace biggerprint
         void ImportNewDocument(string file)
         {
             document = new Document();
-            document.pageSize = pageSize;
 
             var element = Import(file);
             document.elements.Add(element);

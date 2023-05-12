@@ -25,11 +25,12 @@ namespace biggerprint
         private volatile float foo;
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
+            log += "Loading Settings...\n";
+            Settings.LoadSettings();
             log += "Enumerating Printers...\n";
             PrintDocument pdoc = new PrintDocument();
-
+            Settings.pageSize = Utility.Unfreedom(pdoc.DefaultPageSettings.PrintableArea.Size);
             PrinterSettings printerSettings = new PrinterSettings();
-            bool def = printerSettings.IsDefaultPrinter;
 
             log += $"Printer found : {printerSettings.PrinterName}\n";
             log += $"Fetching default settings...\n";
@@ -52,6 +53,11 @@ namespace biggerprint
             }
             progressBar1.Value = (int)(progress * 100.0f);
             label1.Text = log;
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }

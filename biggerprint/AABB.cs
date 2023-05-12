@@ -7,13 +7,14 @@ using System.Threading.Tasks;
 
 namespace biggerprint
 {
-    public  class AABB
+    public class AABB
     {
         public float minx, miny, maxx, maxy;
 
-        public float width { get { return maxx- minx; } }
-        public float height{ get { return maxy - miny; } }
+        public float width { get { return maxx - minx; } }
+        public float height { get { return maxy - miny; } }
         public RectangleF RectangleF { get { return new RectangleF(minx, miny, maxx - minx, maxy - miny); } }
+        // public Rectangle Rectangle { get { return new Rectangle((int)minx, (int)miny, (int)maxx - (int)minx, (int)maxy - (int)miny); } }
 
         public AABB(float minx, float miny, float maxx, float maxy)
         {
@@ -25,7 +26,7 @@ namespace biggerprint
 
         public static AABB Empty()
         {
-            return new AABB ( float.MaxValue, float.MaxValue, float.MinValue, float.MinValue );
+            return new AABB(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
         }
 
         public static AABB Add(AABB a, AABB b)
@@ -37,7 +38,7 @@ namespace biggerprint
             return new AABB(minx, miny, maxx, maxy);
         }
 
-        public static AABB Add(AABB a,float x, float y)
+        public static AABB Add(AABB a, float x, float y)
         {
             float minx = Math.Min(a.minx, x);
             float miny = Math.Min(a.miny, y);

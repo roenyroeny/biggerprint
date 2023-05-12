@@ -20,6 +20,16 @@ namespace biggerprint
 
         static float sizeX = callibrationRectSize, sizeY = callibrationRectSize;
 
+        public static SizeF pageSize;
+
+        public static SizeF pageSizeCallibrated
+        {
+            get
+            {
+                return new SizeF(pageSize.Width * scaleX, pageSize.Height * scaleY);
+            }
+        }
+
         public static float scaleX { get { return sizeX / callibrationRectSize; } }
         public static float scaleY { get { return sizeY / callibrationRectSize; } }
 
