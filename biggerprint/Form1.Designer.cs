@@ -127,7 +127,7 @@
             // 
             // openFileDialog1
             // 
-            this.openFileDialog1.Filter = "DXF|*.dxf";
+            this.openFileDialog1.Filter = "DXF|*.dxf|jpeg|*.jpg|png|*.png";
             // 
             // Form1
             // 

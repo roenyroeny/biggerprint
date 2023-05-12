@@ -42,6 +42,15 @@ namespace biggerprint
             return new SizeF(Unfreedom(s.Width), Unfreedom(s.Height));
         }
 
+        public static RectangleF Concat(RectangleF a, RectangleF b)
+        {
+            float left = Math.Min(a.Left, b.Left);
+            float top = Math.Min(a.Top, b.Top);
+            float right = Math.Max(a.Right, b.Right);
+            float bottom = Math.Max(a.Bottom, b.Bottom);
+            return new RectangleF(left, top, right - left, bottom - top);
+        }
+
         public static void DrawBulgedLine(Graphics g, Pen p, PointF A, PointF B, float bulge)
         {
             if (Math.Abs(bulge) < 0.01f)
@@ -96,12 +105,18 @@ namespace biggerprint
             }
         }
 
-        public static RectangleF GetArcBounds(RectangleF rect, float startAngle, float sweepAngle)
+        public static AABB GetArcBounds(RectangleF rect, float startAngle, float sweepAngle)
         {
             float start = startAngle;
             float stop = startAngle + sweepAngle;
             start = mod(start, (float)Math.PI * 2.0f);
             stop = mod(stop, (float)Math.PI * 2.0f);
+            if(start >= stop)
+            {
+                float t = start;
+                start = stop;
+                stop = t;
+            }
 
             float centerX = rect.Left + rect.Width / 2;
             float centerY = rect.Top + rect.Height / 2;
@@ -135,18 +150,18 @@ namespace biggerprint
                     maxy = Math.Max(maxy, (float)(centerY + Math.Sin(v) * radiusY));
                 }
             }
-            return new RectangleF(minx, miny, maxx - minx, maxy - miny);
+            return new AABB(minx, miny, maxx, maxy );
         }
 
 
-        public static RectangleF GetBulgedLineBounds(PointF A, PointF B, float bulge)
+        public static AABB GetBulgedLineBounds(PointF A, PointF B, float bulge)
         {
             if (Math.Abs(bulge) < 0.01f)
             {
                 float minx = Math.Min(A.X, B.X), miny = Math.Min(A.Y, B.Y);
                 float maxx = Math.Max(A.X, B.X), maxy = Math.Max(A.Y, B.Y);
 
-                return new RectangleF(minx, miny, maxx - minx, maxy - miny);
+                return new AABB(minx, miny, maxx, maxy);
             }
             else
             {

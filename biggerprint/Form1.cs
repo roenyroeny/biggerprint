@@ -65,7 +65,6 @@ namespace biggerprint
 
 
 
-
 #if DEBUG
             Import("end.dxf");
 #endif
@@ -160,13 +159,13 @@ namespace biggerprint
 
         void HomeView()
         {
-            if (document == null || document.width == 0 || document.height == 0)
+            if (document == null || document.bounds.width == 0 || document.bounds.height == 0)
                 return;
-            float s = Math.Min(p_view.Width / document.width, p_view.Height / document.height) * 0.75f;
+            float s = Math.Min(p_view.Width / document.bounds.width, p_view.Height / document.bounds.height) * 0.75f;
             view.Reset();
             view.Translate((float)p_view.Width / 2, (float)p_view.Height / 2);
             view.Scale(s, s);
-            view.Translate(-(document.left + document.width / 2), -(document.top + document.height / 2));
+            view.Translate(-(document.bounds.minx + document.bounds.width / 2), -(document.bounds.miny + document.bounds.height / 2));
             p_view.Invalidate();
         }
 
@@ -269,18 +268,34 @@ namespace biggerprint
             openFileDialog1.CheckFileExists = true;
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
-                Import(openFileDialog1.FileName);
+                document = new Document();
+                document.pageSize = pageSize;
+
+                var element=Import(openFileDialog1.FileName);
+                document.elements.Add(element);
+
+                document.CalculateBounds();
+                HomeView();
             }
         }
 
-        void Import(string file)
+        Element Import(string file)
         {
-            SimpleDXF.Document doc = new SimpleDXF.Document(file);
-            doc.Read();
-            document = new Document(doc);
-            document.pageSize = pageSize;
-            document.CalculateBounds();
-            HomeView();
+            var ext = Path.GetExtension(file);
+            switch (ext)
+            {
+                case ".dxf":
+                    SimpleDXF.Document doc = new SimpleDXF.Document(file);
+                    doc.Read();
+                    return new ElementDXF(doc);
+                case ".jpg":
+                    case ".png":
+                    var bmap = (Bitmap)Image.FromFile(file);
+                    if (bmap == null)
+                        return null;
+                    return new ElementBitmap(bmap);
+            }
+            return null;
         }
     }
 }

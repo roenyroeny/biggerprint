@@ -3,111 +3,54 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
-using System.IO;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using SimpleDXF;
 
 namespace biggerprint
 {
     public class Document
     {
-
         public Document() { }
-
-        SimpleDXF.Document dxfdoc = null;
-        public Document(SimpleDXF.Document doc)
-        {
-            dxfdoc = doc;
-        }
 
         public SizeF pageSize;
 
         const double gridsize = 50;
-        public float left = 0, top = 0;
-        public float width = 150, height = 150;
+        public AABB bounds = AABB.Empty();
         public float boundsPadding = 5.0f; // 5mm
-
 
         Pen crossHatchPen = new Pen(Brushes.LightGray, 0.2f); // 0.2mm lines
         Pen pagePen = new Pen(Brushes.Red, 0.2f); // 0.4mm lines
 
+        public List<Element> elements = new List<Element>();
 
         public void CalculateBounds()
         {
-            float minx = float.MaxValue, miny = float.MaxValue;
-            float maxx = float.MinValue, maxy = float.MinValue;
-
-            foreach (var a in dxfdoc.Arcs)
+            bounds = AABB.Empty();
+            bool first = true;
+            foreach (var e in elements)
             {
-                float start = Utility.DegToRad((float)a.StartAngle);
-                float stop = Utility.DegToRad((float)a.EndAngle);
-
-                var rect = new RectangleF((float)a.Center.X + (float)a.Radius, (float)a.Center.Y + (float)a.Radius, (float)a.Radius * 2.0f, (float)a.Radius * 2.0f);
-                var bounds = Utility.GetArcBounds(rect, start, stop-start);
-
-                minx = Math.Min(minx, bounds.Left);
-                miny = Math.Min(miny, bounds.Top);
-                maxx = Math.Max(maxx, bounds.Right);
-                maxy = Math.Max(maxy, bounds.Bottom);
-            }
-            foreach (var a in dxfdoc.Lines)
-            {
-                minx = Math.Min(minx, (float)(a.P1.X));
-                miny = Math.Min(miny, -(float)(a.P1.Y));
-                maxx = Math.Max(maxx, (float)(a.P1.X));
-                maxy = Math.Max(maxy, -(float)(a.P1.Y));
-
-                minx = Math.Min(minx, (float)(a.P2.X));
-                miny = Math.Min(miny, -(float)(a.P2.Y));
-                maxx = Math.Max(maxx, (float)(a.P2.X));
-                maxy = Math.Max(maxy, -(float)(a.P2.Y));
-            }
-            foreach (var p in dxfdoc.Polylines)
-            {
-                for (int i = 0; i < p.Vertexes.Count; i++)
-                {
-                    var a = p.Vertexes[i];
-                    var b = p.Vertexes[(i + 1) % p.Vertexes.Count];
-                    PointF A = new PointF((float)a.Position.X, -(float)a.Position.Y);
-                    PointF B = new PointF((float)b.Position.X, -(float)b.Position.Y);
-
-                    if (i < p.Vertexes.Count - 1 || p.Closed)
-                    {
-                        float bulge = (float)p.Vertexes[i].Bulge;
-                        var bounds = Utility.GetBulgedLineBounds(A, B, bulge);
-                        minx = Math.Min(minx, bounds.Left);
-                        miny = Math.Min(miny, bounds.Top);
-                        maxx = Math.Max(maxx, bounds.Right);
-                        maxy = Math.Max(maxy, bounds.Bottom);
-                    }
-                }
+                var b = e.GetBounds();
+                if (first)
+                    bounds = b;
+                else
+                    bounds = AABB.Add(bounds, b);
+                first = false;
             }
 
-            minx -= boundsPadding;
-            miny -= boundsPadding;
-            maxx += boundsPadding;
-            maxy += boundsPadding;
-
-
-            left = minx;
-            top = miny;
-            width = maxx - minx;
-            height = maxy - miny;
+            bounds.minx -= boundsPadding;
+            bounds.miny -= boundsPadding;
+            bounds.maxx += boundsPadding;
+            bounds.maxy += boundsPadding;
         }
 
 
         public int PagesRequiredX(SizeF pageSize)
         {
-            return (int)Math.Ceiling((double)(width / pageSize.Width));
+            return (int)Math.Ceiling((double)(bounds.width / pageSize.Width));
         }
 
         public int PagesRequiredY(SizeF pageSize)
         {
-            return (int)Math.Ceiling((double)(height / pageSize.Height));
+            return (int)Math.Ceiling((double)(bounds.height / pageSize.Height));
         }
 
         public int PagesRequired(SizeF pageSize)
@@ -120,12 +63,15 @@ namespace biggerprint
             if (transform != null)
                 g.MultiplyTransform(transform);
 
+            foreach (var e in elements)
+                e.Render(g);
+
             if (showCrossHatch)
             {
-                g.SetClip(new RectangleF(left, top, width, height));
-                for (double x = left; x < left + width; x += gridsize)
+                g.SetClip(bounds.RectangleF);
+                for (double y = bounds.miny; y < bounds.maxy; y += gridsize)
                 {
-                    for (double y = top; y < top + height; y += gridsize)
+                    for (double x = bounds.minx; x < bounds.maxx; x += gridsize)
                     {
                         g.DrawLine(crossHatchPen, (float)x, (float)y, (float)(x + gridsize), (float)(y + gridsize));
                         g.DrawLine(crossHatchPen, (float)(x + gridsize), (float)y, (float)x, (float)(y + gridsize));
@@ -136,47 +82,11 @@ namespace biggerprint
 
             if (showPages)
             {
-                for (double x = left; x < left + width; x += pageSize.Width)
+                for (double y = bounds.miny; y < bounds.maxy; y += pageSize.Height)
                 {
-                    for (double y = top; y < top + height; y += pageSize.Height)
+                    for (double x = bounds.minx; x < bounds.maxx; x += pageSize.Width)
                     {
                         g.DrawRectangle(pagePen, (float)x, (float)y, pageSize.Width, pageSize.Height);
-                    }
-                }
-            }
-
-            foreach (var a in dxfdoc.Arcs)
-            {
-                var rect = new RectangleF((float)(a.Center.X - a.Radius), -(float)(a.Center.Y - a.Radius), (float)a.Radius * 2.0f, -(float)a.Radius * 2.0f);
-                g.DrawArc(Pens.Black, rect, (float)a.StartAngle, (float)(a.EndAngle - a.StartAngle));
-            }
-
-            foreach (var a in dxfdoc.Lines)
-            {
-                g.DrawLine(Pens.Black, (float)a.P1.X, -(float)a.P1.Y, (float)a.P2.X, -(float)a.P2.Y);
-            }
-
-            foreach (var p in dxfdoc.Polylines)
-            {
-                GraphicsPath path = new GraphicsPath();
-                for (int i = 0; i < p.Vertexes.Count; i++)
-                {
-                    var a = p.Vertexes[i];
-                    var b = p.Vertexes[(i + 1) % p.Vertexes.Count];
-                    PointF A = new PointF((float)a.Position.X, -(float)a.Position.Y);
-                    PointF B = new PointF((float)b.Position.X, -(float)b.Position.Y);
-
-                    if (i < p.Vertexes.Count - 1 || p.Closed)
-                    {
-                        float bulge = (float)p.Vertexes[i].Bulge;
-
-                        if (i == 2)
-                            continue;
-
-                        Utility.DrawBulgedLine(g, Pens.Black, A, B, bulge);
-
-                        var rect = Utility.GetBulgedLineBounds(A, B, bulge);
-                        g.DrawRectangle(Pens.Green, rect.X, rect.Y, rect.Width, rect.Height);
                     }
                 }
             }
@@ -202,7 +112,7 @@ namespace biggerprint
                 Matrix mat = new Matrix();
                 var scale = Utility.Unfreedom(new SizeF(1, 1));
                 mat.Scale(1.0f / scale.Width, 1.0f / scale.Height); // unfreedom
-                mat.Translate(-pageIndexX * pageSize.Width - left, -pageIndexY * pageSize.Height - top);
+                mat.Translate(-pageIndexX * pageSize.Width -bounds.minx, -pageIndexY * pageSize.Height - bounds.miny);
                 Render(ev.Graphics, mat, true, false);
 
                 pageIndexX++;
@@ -216,5 +126,12 @@ namespace biggerprint
             };
             return pdoc;
         }
+    }
+
+    public abstract class Element
+    {
+        public abstract void Render(Graphics g);
+
+        public abstract AABB GetBounds();
     }
 }
