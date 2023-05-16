@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("biggerprint")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("https://github.com/roenyroeny/biggerprint")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Jeroen van Schijndel")]
 [assembly: AssemblyProduct("biggerprint")]
 [assembly: AssemblyCopyright("Copyright ©  2023")]
 [assembly: AssemblyTrademark("")]

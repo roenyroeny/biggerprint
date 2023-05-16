@@ -312,6 +312,16 @@ namespace biggerprint
                 MessageBox.Show("Failed to save settings.", "Error", MessageBoxButtons.OK);
         }
 
+        private void githubToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            System.Diagnostics.Process.Start($"https://github.com/roenyroeny/biggerprint");
+        }
+
+        private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            new AboutBox1().ShowDialog();
+        }
+
         Element Import(string file)
         {
             var ext = Path.GetExtension(file);

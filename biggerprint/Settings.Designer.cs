@@ -91,7 +91,7 @@
             this.groupBox1.Size = new System.Drawing.Size(432, 144);
             this.groupBox1.TabIndex = 3;
             this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Scale Error";
+            this.groupBox1.Text = "Page scale error";
             // 
             // label3
             // 

@@ -10,7 +10,6 @@ namespace biggerprint
 {
     public class Document
     {
-        public Document() { }
 
         const double gridsize = 50;
         public AABB bounds = AABB.Empty();
@@ -19,8 +18,8 @@ namespace biggerprint
         {
             get
             {
-                float w = PagesRequiredX * pageSizeCallibrated.Width;
-                float h = PagesRequiredY * pageSizeCallibrated.Height;
+                float w = PagesRequiredX * pageSizeWithoutPaddingCallibrated.Width;
+                float h = PagesRequiredY * pageSizeWithoutPaddingCallibrated.Height;
                 float cx = (bounds.minx + bounds.maxx) / 2.0f;
                 float cy = (bounds.miny + bounds.maxy) / 2.0f;
                 return new AABB(cx - w / 2.0f, cy - h / 2.0f, cx + w / 2.0f, cy + h / 2.0f);
@@ -30,10 +29,15 @@ namespace biggerprint
         public bool IsValid { get { return elements.Count > 0; } }
 
         Pen crossHatchPen = new Pen(Brushes.Gray, 0.2f); // 0.2mm lines
-        Pen pagePen = new Pen(Brushes.Red, 0.2f); // 0.4mm lines
+        Pen pagePen = new Pen(Color.FromArgb(128, 255, 64, 64), 0.2f); // 0.4mm lines
 
         public List<Element> elements = new List<Element>();
 
+        public Document()
+        {
+            pagePen.DashOffset = 0.25f;
+            pagePen.DashStyle = DashStyle.Dash;
+        }
         public void CalculateBounds()
         {
             bounds = AABB.Empty();
@@ -61,11 +65,11 @@ namespace biggerprint
                 if (Settings.pageOrientation == Settings.PageOrientation.Auto)
                 {
                     // try portrait
-                    int pcount = (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeCallibrated.Width)) *
-                        (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeCallibrated.Height));
+                    int pcount = (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeWithoutPaddingCallibrated.Width)) *
+                        (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeWithoutPaddingCallibrated.Height));
 
-                    int lcount = (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeCallibrated.Height)) *
-                        (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeCallibrated.Width));
+                    int lcount = (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeWithoutPaddingCallibrated.Height)) *
+                        (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeWithoutPaddingCallibrated.Width));
 
                     return pcount < lcount ? Settings.PageOrientation.Portrait : Settings.PageOrientation.Landscape;
 
@@ -85,20 +89,41 @@ namespace biggerprint
                     return new SizeF(Settings.pageSizeCallibrated.Height, Settings.pageSizeCallibrated.Width);
             }
         }
+        public SizeF pageSizeWithoutPaddingCallibrated
+        {
+            get
+            {
+                if (pageOrientation == Settings.PageOrientation.Portrait)
+                    return Settings.pageSizeWithoutPaddingCallibrated;
+                else
+                    return new SizeF(Settings.pageSizeWithoutPaddingCallibrated.Height, Settings.pageSizeWithoutPaddingCallibrated.Width);
+            }
+        }
 
-        public int PagesRequiredX { get { return (int)Math.Ceiling((double)(bounds.width / pageSizeCallibrated.Width)); } }
+        public int PagesRequiredX { get { return (int)Math.Ceiling((double)(bounds.width / pageSizeWithoutPaddingCallibrated.Width)); } }
 
-        public int PagesRequiredY { get { return (int)Math.Ceiling((double)(bounds.height / pageSizeCallibrated.Height)); } }
+        public int PagesRequiredY { get { return (int)Math.Ceiling((double)(bounds.height / pageSizeWithoutPaddingCallibrated.Height)); } }
 
         public int PagesRequired { get { return PagesRequiredX * PagesRequiredY; } }
 
-        public AABB GetPage(int x, int y)
+        public AABB GetPageWithoutPadding(int x, int y)
         {
             return new AABB(
-                pagesBounds.minx + pageSizeCallibrated.Width * x,
-                pagesBounds.miny + pageSizeCallibrated.Height * y,
-                pagesBounds.minx + pageSizeCallibrated.Width * (x + 1),
-                pagesBounds.miny + pageSizeCallibrated.Height * (y + 1)
+                pagesBounds.minx + pageSizeWithoutPaddingCallibrated.Width * x,
+                pagesBounds.miny + pageSizeWithoutPaddingCallibrated.Height * y,
+                pagesBounds.minx + pageSizeWithoutPaddingCallibrated.Width * (x + 1),
+                pagesBounds.miny + pageSizeWithoutPaddingCallibrated.Height * (y + 1)
+                );
+        }
+
+        public AABB GetPage(int x, int y)
+        {
+            var page = GetPageWithoutPadding(x, y);
+            return new AABB(
+                page.minx - Settings.paddingSize,
+                page.miny - Settings.paddingSize,
+                page.maxx + Settings.paddingSize,
+                page.maxy + Settings.paddingSize
                 );
         }
 
@@ -108,8 +133,8 @@ namespace biggerprint
                 g.MultiplyTransform(transform);
 
             var pagebounds = pagesBounds;
-            //if (preview)
-            //    g.FillRectangle(Brushes.LightGray, pagebounds.RectangleF);
+            if (preview)
+                g.FillRectangle(Brushes.LightGray, pagebounds.RectangleF);
 
             foreach (var e in elements)
                 e.Render(g);
@@ -135,6 +160,9 @@ namespace biggerprint
                 {
                     for (int x = 0; x < PagesRequiredX; x++)
                     {
+                        // var pagepad = GetPageWithoutPadding(x, y);
+                        // g.DrawRectangles(pagePen, new[] { pagepad.RectangleF });
+
                         var page = GetPage(x, y);
                         g.DrawRectangles(pagePen, new[] { page.RectangleF });
 #if false

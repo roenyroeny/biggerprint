@@ -20,14 +20,24 @@ namespace biggerprint
         const float callibrationRectSize = 100; // mm
 
         static float sizeX = callibrationRectSize, sizeY = callibrationRectSize;
-
+        public static float paddingSize = 5.0f; // mm padding around page to help alignment
         public static SizeF pageSize;
 
+        // maximum physical size printable per page. might not match what the printer reports.
+        // but is callibrated so that after printing it will match in the real world
         public static SizeF pageSizeCallibrated
         {
             get
             {
                 return new SizeF(pageSize.Width * scaleX, pageSize.Height * scaleY);
+            }
+        }
+        
+        public static SizeF pageSizeWithoutPaddingCallibrated
+        {
+            get
+            {
+                return new SizeF(pageSizeCallibrated.Width - paddingSize * 2, pageSizeCallibrated.Height - paddingSize * 2);
             }
         }
 
