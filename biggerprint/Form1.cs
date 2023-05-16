@@ -16,7 +16,15 @@ namespace biggerprint
         CheckBox showCrossHatching;
 
         Document document = null;
-        
+
+        public bool Valid
+        {
+            get
+            {
+                return Bounds.X != float.PositiveInfinity && Bounds.Y != float.PositiveInfinity;
+            }
+        }
+
         public Form1()
         {
             InitializeComponent();
@@ -48,17 +56,12 @@ namespace biggerprint
                 System.Windows.Forms.ControlStyles.DoubleBuffer, true
             });
 
+            UpdateOrientationUI();
 
             p_view.MouseWheel += new MouseEventHandler(this.panel1_MouseWheel);
 
-            (p_view as Control).KeyDown += Form1_KeyDown;
-            (p_view as Control).KeyUp += Form1_KeyUp;
-
-
-
-#if DEBUG
-            Import("end.dxf");
-#endif
+            p_view.KeyDown += Form1_KeyDown;
+            p_view.KeyUp += Form1_KeyUp;
         }
 
         private void CheckedChanged(object sender, EventArgs e)
@@ -91,7 +94,6 @@ namespace biggerprint
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            ImportNewDocument("end.dxf");
         }
 
         private void panel1_MouseWheel(object sender, MouseEventArgs e)
@@ -142,7 +144,7 @@ namespace biggerprint
 
         void HomeView()
         {
-            if (document == null || document.bounds.width == 0 || document.bounds.height == 0)
+            if (document == null || !document.IsValid)
                 return;
             float s = Math.Min(p_view.Width / document.bounds.width, p_view.Height / document.bounds.height) * 0.75f;
             view.Reset();
@@ -254,15 +256,60 @@ namespace biggerprint
             }
         }
 
-        void ImportNewDocument(string file)
+        public void ImportNewDocument(string file)
         {
             document = new Document();
 
             var element = Import(file);
-            document.elements.Add(element);
+            if (element != null)
+                document.elements.Add(element);
 
             document.CalculateBounds();
             HomeView();
+        }
+
+        public void UpdateOrientationUI()
+        {
+            portraitToolStripMenuItem.Checked = Settings.pageOrientation == Settings.PageOrientation.Portrait;
+            landscapeToolStripMenuItem.Checked = Settings.pageOrientation == Settings.PageOrientation.Landscape;
+            autoToolStripMenuItem.Checked = Settings.pageOrientation == Settings.PageOrientation.Auto;
+            switch (Settings.pageOrientation)
+            {
+                case Settings.PageOrientation.Portrait:
+                    toolStripDropDownButton1.Text = portraitToolStripMenuItem.Text;
+                    break;
+                case Settings.PageOrientation.Landscape:
+                    toolStripDropDownButton1.Text = landscapeToolStripMenuItem.Text;
+                    break;
+                case Settings.PageOrientation.Auto:
+                    toolStripDropDownButton1.Text = autoToolStripMenuItem.Text;
+                    break;
+            }
+            p_view.Invalidate();
+        }
+
+        private void portraitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Settings.pageOrientation = Settings.PageOrientation.Portrait;
+            UpdateOrientationUI();
+        }
+
+        private void landscapeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Settings.pageOrientation = Settings.PageOrientation.Landscape;
+            UpdateOrientationUI();
+        }
+
+        private void autoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Settings.pageOrientation = Settings.PageOrientation.Auto;
+            UpdateOrientationUI();
+        }
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (!Settings.SaveSettings())
+                MessageBox.Show("Failed to save settings.", "Error", MessageBoxButtons.OK);
         }
 
         Element Import(string file)
@@ -275,7 +322,7 @@ namespace biggerprint
                     doc.Read();
                     return new ElementDXF(doc);
                 case ".jpg":
-                    case ".png":
+                case ".png":
                     var bmap = (Bitmap)Image.FromFile(file);
                     if (bmap == null)
                         return null;

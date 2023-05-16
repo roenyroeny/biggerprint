@@ -2,3 +2,5 @@
 biggerprint/obj
 .vs/biggerprint/v17/.suo
 .vs
+*.args.json
+*.user

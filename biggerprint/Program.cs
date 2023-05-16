@@ -17,7 +17,14 @@ namespace biggerprint
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             new splash().ShowDialog();
-            Application.Run(new Form1());
+
+            var form = new Form1();
+
+            var args = Environment.GetCommandLineArgs();
+            if (args.Length > 1)
+                form.ImportNewDocument(args[1]);
+
+            Application.Run(form);
         }
     }
 }

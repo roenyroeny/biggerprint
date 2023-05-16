@@ -19,13 +19,15 @@ namespace biggerprint
         {
             get
             {
-                float w = PagesRequiredX * Settings.pageSizeCallibrated.Width;
-                float h = PagesRequiredY * Settings.pageSizeCallibrated.Height;
+                float w = PagesRequiredX * pageSizeCallibrated.Width;
+                float h = PagesRequiredY * pageSizeCallibrated.Height;
                 float cx = (bounds.minx + bounds.maxx) / 2.0f;
                 float cy = (bounds.miny + bounds.maxy) / 2.0f;
                 return new AABB(cx - w / 2.0f, cy - h / 2.0f, cx + w / 2.0f, cy + h / 2.0f);
             }
         }
+
+        public bool IsValid { get { return elements.Count > 0; } }
 
         Pen crossHatchPen = new Pen(Brushes.Gray, 0.2f); // 0.2mm lines
         Pen pagePen = new Pen(Brushes.Red, 0.2f); // 0.4mm lines
@@ -52,19 +54,51 @@ namespace biggerprint
             bounds.maxy += boundsPadding;
         }
 
-        public int PagesRequiredX { get { return (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeCallibrated.Width)); } }
+        public Settings.PageOrientation pageOrientation
+        {
+            get
+            {
+                if (Settings.pageOrientation == Settings.PageOrientation.Auto)
+                {
+                    // try portrait
+                    int pcount = (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeCallibrated.Width)) *
+                        (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeCallibrated.Height));
 
-        public int PagesRequiredY { get { return (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeCallibrated.Height)); } }
+                    int lcount = (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeCallibrated.Height)) *
+                        (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeCallibrated.Width));
+
+                    return pcount < lcount ? Settings.PageOrientation.Portrait : Settings.PageOrientation.Landscape;
+
+                }
+                else
+                    return Settings.pageOrientation;
+            }
+        }
+
+        public SizeF pageSizeCallibrated
+        {
+            get
+            {
+                if (pageOrientation == Settings.PageOrientation.Portrait)
+                    return Settings.pageSizeCallibrated;
+                else
+                    return new SizeF(Settings.pageSizeCallibrated.Height, Settings.pageSizeCallibrated.Width);
+            }
+        }
+
+        public int PagesRequiredX { get { return (int)Math.Ceiling((double)(bounds.width / pageSizeCallibrated.Width)); } }
+
+        public int PagesRequiredY { get { return (int)Math.Ceiling((double)(bounds.height / pageSizeCallibrated.Height)); } }
 
         public int PagesRequired { get { return PagesRequiredX * PagesRequiredY; } }
 
         public AABB GetPage(int x, int y)
         {
             return new AABB(
-                pagesBounds.minx + Settings.pageSizeCallibrated.Width * x,
-                pagesBounds.miny + Settings.pageSizeCallibrated.Height * y,
-                pagesBounds.minx + Settings.pageSizeCallibrated.Width * (x + 1),
-                pagesBounds.miny + Settings.pageSizeCallibrated.Height * (y + 1)
+                pagesBounds.minx + pageSizeCallibrated.Width * x,
+                pagesBounds.miny + pageSizeCallibrated.Height * y,
+                pagesBounds.minx + pageSizeCallibrated.Width * (x + 1),
+                pagesBounds.miny + pageSizeCallibrated.Height * (y + 1)
                 );
         }
 
@@ -103,12 +137,13 @@ namespace biggerprint
                     {
                         var page = GetPage(x, y);
                         g.DrawRectangles(pagePen, new[] { page.RectangleF });
-
+#if false
                         page.minx += 5.0f;
                         page.miny += 5.0f;
                         page.maxx -= 5.0f;
                         page.maxy -= 5.0f;
                         g.DrawRectangles(pagePen, new[] { page.RectangleF });
+#endif
                     }
                 }
             }
@@ -117,6 +152,8 @@ namespace biggerprint
         public PrintDocument GetPrintDocument()
         {
             PrintDocument pdoc = new PrintDocument();
+            if (pageOrientation == Settings.PageOrientation.Landscape)
+                pdoc.DefaultPageSettings.Landscape = true;
 
             int pageIndexX = 0;
             int pageIndexY = 0;
@@ -130,8 +167,12 @@ namespace biggerprint
                 var freedomScale = Utility.Unfreedom(new SizeF(1, 1));
 
                 AABB page = GetPage(pageIndexX, pageIndexY);
-                mat.Scale((float)ev.PageSettings.PrintableArea.Width / page.width, (float)ev.PageSettings.PrintableArea.Height / page.height);
+                if (pageOrientation == Settings.PageOrientation.Portrait)
+                    mat.Scale((float)ev.PageSettings.PrintableArea.Width / page.width, (float)ev.PageSettings.PrintableArea.Height / page.height);
+                else
+                    mat.Scale((float)ev.PageSettings.PrintableArea.Height / page.width, (float)ev.PageSettings.PrintableArea.Width / page.height);
                 mat.Translate(-page.minx, -page.miny);
+
                 Render(ev.Graphics, mat, false, true, false);
 
                 pageIndexX++;

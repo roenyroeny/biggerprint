@@ -11,6 +11,7 @@ using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Linq;
 using SimpleDXF;
+using static biggerprint.Settings;
 
 namespace biggerprint
 {
@@ -29,6 +30,27 @@ namespace biggerprint
                 return new SizeF(pageSize.Width * scaleX, pageSize.Height * scaleY);
             }
         }
+
+        public enum PageOrientation
+        {
+            Portrait, 
+            Landscape,
+            Auto
+        }
+        public static PageOrientation pageOrientation = PageOrientation.Auto;
+
+        public static SizeF GetCallibratedPageSize(PageOrientation pageOrientation)
+        {
+            switch(pageOrientation)
+            {
+                case PageOrientation.Portrait:
+                    return new SizeF(pageSize.Width * scaleX, pageSize.Height * scaleY);
+                case PageOrientation.Landscape:
+                    return new SizeF(pageSize.Height * scaleY, pageSize.Width * scaleX);
+                default: throw null;
+            }
+        }
+
 
         public static float scaleX { get { return sizeX / callibrationRectSize; } }
         public static float scaleY { get { return sizeY / callibrationRectSize; } }
@@ -51,6 +73,7 @@ namespace biggerprint
                 var root = doc.Element("settings");
                 sizeX = float.Parse(root.Attribute("sizeX").Value);
                 sizeY = float.Parse(root.Attribute("sizeY").Value);
+                pageOrientation = (PageOrientation)int.Parse(root.Attribute("orientation").Value);
             }
             catch
             {
@@ -67,6 +90,7 @@ namespace biggerprint
                 XElement e = new XElement("settings");
                 e.SetAttributeValue("sizeX", sizeX);
                 e.SetAttributeValue("sizeY", sizeY);
+                e.SetAttributeValue("orientation", (int)pageOrientation);
                 e.Save(Filename);
             }
             catch
