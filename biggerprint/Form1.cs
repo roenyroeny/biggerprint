@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace biggerprint
@@ -11,11 +12,15 @@ namespace biggerprint
     {
         Matrix view = new Matrix();
         int mouseX, mouseY;
+        bool mouseMoved = false;
 
         CheckBox showPages;
         CheckBox showCrossHatching;
 
         Document document = null;
+
+        Element selectedElement = null;
+        Element dragElement = null;
 
         public bool Valid
         {
@@ -94,40 +99,38 @@ namespace biggerprint
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            p_view.AllowDrop = true;
         }
 
         private void panel1_MouseWheel(object sender, MouseEventArgs e)
         {
-            /*
-            if (ModifierKeys == Keys.Control)
+            var p = FromView(new PointF(mouseX, mouseY));
+
+            float s2 = view.Elements[0];
+            view.Translate(p.X, p.Y);
+            float t = -e.Delta / 120.0f;
+            float s = 1.0f - t * 0.125f;
+
+            view.Scale(s, s, MatrixOrder.Prepend);
+
+            view.Translate(-p.X, -p.Y);
+            p_view.Invalidate();
+        }
+
+        public Element PickElement(PointF point)
+        {
+            if (document == null)
+                return null;
+            foreach (Element e in document.elements)
             {
-                if (selectedEdge != null)
+                var bounds = e.GetBounds();
+                if (point.X >= bounds.minx && point.Y >= bounds.miny && point.X <= bounds.maxx && point.Y <= bounds.maxx)
                 {
-                    selectedEdge.Distance += e.Delta / 12;
-                    if (selectedEdge.Distance < 0)
-                        selectedEdge.Distance = 0;
-                }
-                if (selectedNode != null)
-                {
-                    selectedNode.Circumference += e.Delta / 12;
-                    if (selectedNode.Circumference < 0)
-                        selectedNode.Circumference = 0;
+                    return e;
                 }
             }
-            else*/
-            {
-                var p = FromView(new PointF(mouseX, mouseY));
 
-                float s2 = view.Elements[0];
-                view.Translate(p.X, p.Y);
-                float t = -e.Delta / 120.0f;
-                float s = 1.0f - t * 0.125f;
-
-                view.Scale(s, s, MatrixOrder.Prepend);
-
-                view.Translate(-p.X, -p.Y);
-                p_view.Invalidate();
-            }
+            return null;
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -146,11 +149,12 @@ namespace biggerprint
         {
             if (document == null || !document.IsValid)
                 return;
-            float s = Math.Min(p_view.Width / document.bounds.width, p_view.Height / document.bounds.height) * 0.75f;
+            var bounds = document.Bounds;
+            float s = Math.Min(p_view.Width / bounds.width, p_view.Height / bounds.height) * 0.75f;
             view.Reset();
             view.Translate((float)p_view.Width / 2, (float)p_view.Height / 2);
             view.Scale(s, s);
-            view.Translate(-(document.bounds.minx + document.bounds.width / 2), -(document.bounds.miny + document.bounds.height / 2));
+            view.Translate(-bounds.centerX, -bounds.centerY);
             p_view.Invalidate();
         }
 
@@ -160,34 +164,33 @@ namespace biggerprint
 
         private void p_view_MouseMove(object sender, MouseEventArgs e)
         {
+            mouseMoved = true;
             var np = FromView(new PointF((float)e.X, (float)e.Y));
-            /*
-            if (ModifierKeys == Keys.Control)
+            // delta in view
+            var v2 = view.Clone();
+            v2.Invert();
+            var p = new PointF((float)(e.X - mouseX), (float)(e.Y - mouseY));
+            var ps = new PointF[] { p };
+            v2.TransformVectors(ps);
+            var delta = ps[0];
+
+
+            if (e.Button == MouseButtons.Left)
             {
-                if (dragNode != null && !dragNode.locked)
+                if (dragElement != null)
                 {
-                    dragNode.X = np.X;
-                    dragNode.Y = np.Y;
-                    selectNode(null);
+                    dragElement.transform.Translate(delta.X, delta.Y);
                 }
-            }
-            else*/
-            {
-                //if (selectedEdge == null && selectedNode == null)
+                else
                 {
                     // strafe
-                    if (e.Button == MouseButtons.Left)
-                    {
-                        var v2 = view.Clone();
-                        v2.Invert();
-                        var p = new PointF((float)(e.X - mouseX), (float)(e.Y - mouseY));
-                        var ps = new PointF[] { p };
-                        v2.TransformVectors(ps);
-                        view.Translate(ps[0].X, ps[0].Y);
-                        p_view.Invalidate();
-                    }
+                    view.Translate(delta.X, delta.Y);
                 }
+                p_view.Invalidate();
             }
+
+            p_view.Invalidate();
+
             mouseX = e.X;
             mouseY = e.Y;
         }
@@ -230,7 +233,16 @@ namespace biggerprint
         {
             if (document == null)
                 return;
-            document.Render(e.Graphics, view, true, showCrossHatching.Checked, showPages.Checked);
+
+            e.Graphics.Transform = view;
+            document.Render(e.Graphics, true, showCrossHatching.Checked, showPages.Checked);
+
+            var np = FromView(new PointF((float)mouseX, (float)mouseY));
+
+            if (selectedElement != null)
+            {
+                selectedElement.RenderHilight(e.Graphics);
+            }
         }
 
         private void newToolStripMenuItem_Click(object sender, EventArgs e)
@@ -243,7 +255,7 @@ namespace biggerprint
             new Settings().ShowDialog();
             if (document == null)
                 return;
-            document.CalculateBounds();
+
             HomeView();
         }
 
@@ -258,13 +270,13 @@ namespace biggerprint
 
         public void ImportNewDocument(string file)
         {
-            document = new Document();
+            if (document == null)
+                document = new Document();
 
             var element = Import(file);
             if (element != null)
                 document.elements.Add(element);
 
-            document.CalculateBounds();
             HomeView();
         }
 
@@ -320,6 +332,95 @@ namespace biggerprint
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
         {
             new AboutBox1().ShowDialog();
+        }
+
+        private void p_view_MouseDown(object sender, MouseEventArgs e)
+        {
+            mouseMoved = false;
+            var np = FromView(new PointF((float)mouseX, (float)mouseY));
+
+            if (selectedElement != null && selectedElement.Contains(np.X, np.Y))
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    dragElement = selectedElement;
+                }
+                if (e.Button == MouseButtons.Right)
+                {
+                    contextMenuStrip1.Show(PointToScreen(e.Location));
+                }
+            }
+        }
+
+        private void p_view_MouseUp(object sender, MouseEventArgs e)
+        {
+            var np = FromView(new PointF((float)mouseX, (float)mouseY));
+
+            if (mouseMoved)
+                return;
+
+            selectedElement = PickElement(np);
+            p_view.Invalidate();
+
+            dragElement = null;
+        }
+
+        private void p_view_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void removeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (selectedElement != null)
+            {
+                RemoveElement(selectedElement);
+            }
+        }
+
+        public void RemoveElement(Element element)
+        {
+            if (selectedElement == null)
+                return;
+
+            document.elements.Remove(element);
+
+            selectedElement = null;
+            p_view.Invalidate();
+        }
+
+        private void resetScaleToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (selectedElement == null)
+                return;
+
+            selectedElement.transform = new Matrix();
+            p_view.Invalidate();
+        }
+
+        private void Form1_DragEnter(object sender, DragEventArgs e)
+        {
+            MessageBox.Show("meow");
+            e.Effect = DragDropEffects.Move;
+            e.Data.GetFormats();
+        }
+
+        private void p_view_DragEnter(object sender, DragEventArgs e)
+        {
+            MessageBox.Show("meow");
+            e.Effect = DragDropEffects.Move;
+        }
+
+        private void p_view_DragDrop(object sender, DragEventArgs e)
+        {
+            MessageBox.Show("meow");
+
+        }
+
+        private void p_view_DragOver(object sender, DragEventArgs e)
+        {
+            MessageBox.Show("meow");
+
         }
 
         Element Import(string file)

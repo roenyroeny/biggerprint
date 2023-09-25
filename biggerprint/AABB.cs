@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SimpleDXF;
 
 namespace biggerprint
 {
@@ -12,7 +13,9 @@ namespace biggerprint
         public float minx, miny, maxx, maxy;
 
         public float width { get { return maxx - minx; } }
+        public float centerX { get { return (maxx + minx) * 0.5f; } }
         public float height { get { return maxy - miny; } }
+        public float centerY { get { return (maxy + miny) * 0.5f; } }
         public RectangleF RectangleF { get { return new RectangleF(minx, miny, maxx - minx, maxy - miny); } }
         // public Rectangle Rectangle { get { return new Rectangle((int)minx, (int)miny, (int)maxx - (int)minx, (int)maxy - (int)miny); } }
 
@@ -45,6 +48,11 @@ namespace biggerprint
             float maxx = Math.Max(a.maxx, x);
             float maxy = Math.Max(a.maxy, y);
             return new AABB(minx, miny, maxx, maxy);
+        }
+
+        public bool Contains(float x, float y)
+        {
+            return x >= minx && y >= miny && x <= maxx && y <= maxy;
         }
     }
 }

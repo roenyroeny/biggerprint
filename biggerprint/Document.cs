@@ -5,19 +5,19 @@ using System.Data.SqlTypes;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Printing;
+using System.Net.Sockets;
 
 namespace biggerprint
 {
     public class Document
     {
-
         const double gridsize = 50;
-        public AABB bounds = AABB.Empty();
         public float boundsPadding = 5.0f; // 5mm
         public AABB pagesBounds
         {
             get
             {
+                var bounds = Bounds;
                 float w = PagesRequiredX * pageSizeWithoutPaddingCallibrated.Width;
                 float h = PagesRequiredY * pageSizeWithoutPaddingCallibrated.Height;
                 float cx = (bounds.minx + bounds.maxx) / 2.0f;
@@ -38,24 +38,29 @@ namespace biggerprint
             pagePen.DashOffset = 0.25f;
             pagePen.DashStyle = DashStyle.Dash;
         }
-        public void CalculateBounds()
-        {
-            bounds = AABB.Empty();
-            bool first = true;
-            foreach (var e in elements)
-            {
-                var b = e.GetBounds();
-                if (first)
-                    bounds = b;
-                else
-                    bounds = AABB.Add(bounds, b);
-                first = false;
-            }
 
-            bounds.minx -= boundsPadding;
-            bounds.miny -= boundsPadding;
-            bounds.maxx += boundsPadding;
-            bounds.maxy += boundsPadding;
+        public AABB Bounds
+        {
+            get
+            {
+                var bounds = AABB.Empty();
+                bool first = true;
+                foreach (var e in elements)
+                {
+                    var b = e.GetBounds();
+                    if (first)
+                        bounds = b;
+                    else
+                        bounds = AABB.Add(bounds, b);
+                    first = false;
+                }
+
+                bounds.minx -= boundsPadding;
+                bounds.miny -= boundsPadding;
+                bounds.maxx += boundsPadding;
+                bounds.maxy += boundsPadding;
+                return bounds;
+            }
         }
 
         public Settings.PageOrientation pageOrientation
@@ -64,6 +69,7 @@ namespace biggerprint
             {
                 if (Settings.pageOrientation == Settings.PageOrientation.Auto)
                 {
+                    var bounds = Bounds;
                     // try portrait
                     int pcount = (int)Math.Ceiling((double)(bounds.width / Settings.pageSizeWithoutPaddingCallibrated.Width)) *
                         (int)Math.Ceiling((double)(bounds.height / Settings.pageSizeWithoutPaddingCallibrated.Height));
@@ -100,9 +106,9 @@ namespace biggerprint
             }
         }
 
-        public int PagesRequiredX { get { return (int)Math.Ceiling((double)(bounds.width / pageSizeWithoutPaddingCallibrated.Width)); } }
+        public int PagesRequiredX { get { return (int)Math.Ceiling((double)(Bounds.width / pageSizeWithoutPaddingCallibrated.Width)); } }
 
-        public int PagesRequiredY { get { return (int)Math.Ceiling((double)(bounds.height / pageSizeWithoutPaddingCallibrated.Height)); } }
+        public int PagesRequiredY { get { return (int)Math.Ceiling((double)(Bounds.height / pageSizeWithoutPaddingCallibrated.Height)); } }
 
         public int PagesRequired { get { return PagesRequiredX * PagesRequiredY; } }
 
@@ -127,11 +133,8 @@ namespace biggerprint
                 );
         }
 
-        public void Render(Graphics g, Matrix transform = null, bool preview = false, bool showCrossHatch = false, bool showPages = false)
+        public void Render(Graphics g, bool preview = false, bool showCrossHatch = false, bool showPages = false)
         {
-            if (transform != null)
-                g.MultiplyTransform(transform);
-
             var pagebounds = pagesBounds;
             if (preview)
                 g.FillRectangle(Brushes.LightGray, pagebounds.RectangleF);
@@ -201,7 +204,8 @@ namespace biggerprint
                     mat.Scale((float)ev.PageSettings.PrintableArea.Height / page.width, (float)ev.PageSettings.PrintableArea.Width / page.height);
                 mat.Translate(-page.minx, -page.miny);
 
-                Render(ev.Graphics, mat, false, true, false);
+                ev.Graphics.Transform = mat;
+                Render(ev.Graphics, false, true, false);
 
                 pageIndexX++;
                 if (pageIndexX == pageCountX)
@@ -218,8 +222,32 @@ namespace biggerprint
 
     public abstract class Element
     {
+        public Matrix transform = new Matrix();
         public abstract void Render(Graphics g);
 
+        public void RenderHilight(Graphics g)
+        {
+
+            var xform = g.Transform.Clone();
+            g.MultiplyTransform(transform);
+            var borderpen = new Pen(Brushes.Black, 0.1f);
+
+            var aabb = GetBounds();
+            g.DrawRectangles(borderpen, new RectangleF[] { aabb.RectangleF });
+            g.FillRectangle(new SolidBrush(Color.FromArgb(16, 255, 0, 0)), aabb.RectangleF);
+            g.Transform = xform;
+        }
+
         public abstract AABB GetBounds();
+
+        public bool Contains(float x, float y)
+        {
+            var t = transform.Clone();
+            t.Invert();
+            var points = new PointF[] { new PointF(x, y) };
+            t.TransformPoints(points);
+
+            return GetBounds().Contains(points[0].X, points[0].Y);
+        }
     }
 }

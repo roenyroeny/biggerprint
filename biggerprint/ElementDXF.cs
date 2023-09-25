@@ -6,6 +6,7 @@ using System.Drawing.Printing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Schema;
 
 namespace biggerprint
 {
@@ -59,6 +60,8 @@ namespace biggerprint
 
         public override void Render(Graphics g)
         {
+            var xform = g.Transform.Clone();
+            g.MultiplyTransform(transform);
             foreach (var a in dxfdoc.Arcs)
             {
                 var rect = new RectangleF((float)(a.Center.X - a.Radius), -(float)(a.Center.Y - a.Radius), (float)a.Radius * 2.0f, -(float)a.Radius * 2.0f);
@@ -88,6 +91,7 @@ namespace biggerprint
                     }
                 }
             }
+            g.Transform = xform;
         }
     }
 }

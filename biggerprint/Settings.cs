@@ -23,6 +23,28 @@ namespace biggerprint
         public static float paddingSize = 5.0f; // mm padding around page to help alignment
         public static SizeF pageSize;
 
+        public static float scaleX { get { return sizeX / callibrationRectSize; } }
+        public static float scaleY { get { return sizeY / callibrationRectSize; } }
+
+        public static string Path { get { return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/biggerprint"; } }
+        public static string Filename { get { return Path + "/settings.xml"; } }
+
+        public enum PageOrientation
+        {
+            Portrait,
+            Landscape,
+            Auto
+        }
+        public static PageOrientation pageOrientation = PageOrientation.Auto;
+
+        public Settings()
+        {
+            InitializeComponent();
+            numericUpDown1.Value = (decimal)sizeX;
+            numericUpDown2.Value = (decimal)sizeY;
+        }
+
+
         // maximum physical size printable per page. might not match what the printer reports.
         // but is callibrated so that after printing it will match in the real world
         public static SizeF pageSizeCallibrated
@@ -41,13 +63,6 @@ namespace biggerprint
             }
         }
 
-        public enum PageOrientation
-        {
-            Portrait, 
-            Landscape,
-            Auto
-        }
-        public static PageOrientation pageOrientation = PageOrientation.Auto;
 
         public static SizeF GetCallibratedPageSize(PageOrientation pageOrientation)
         {
@@ -61,19 +76,6 @@ namespace biggerprint
             }
         }
 
-
-        public static float scaleX { get { return sizeX / callibrationRectSize; } }
-        public static float scaleY { get { return sizeY / callibrationRectSize; } }
-
-        public Settings()
-        {
-            InitializeComponent();
-            numericUpDown1.Value = (decimal)sizeX;
-            numericUpDown2.Value = (decimal)sizeY;
-        }
-
-        public static string Path { get { return Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "/biggerprint"; } }
-        public static string Filename { get { return Path + "/settings.xml"; } }
 
         public static bool LoadSettings()
         {
@@ -144,11 +146,6 @@ namespace biggerprint
         private void numericUpDown2_ValueChanged(object sender, EventArgs e)
         {
             sizeY = (float)numericUpDown1.Value;
-        }
-
-        private void Settings_Load(object sender, EventArgs e)
-        {
-
         }
 
         private void Settings_FormClosing(object sender, FormClosingEventArgs e)
