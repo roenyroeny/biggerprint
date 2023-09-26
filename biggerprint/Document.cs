@@ -47,7 +47,7 @@ namespace biggerprint
                 bool first = true;
                 foreach (var e in elements)
                 {
-                    var b = e.GetBounds();
+                    var b = e.GetTransformedBounds();
                     if (first)
                         bounds = b;
                     else
