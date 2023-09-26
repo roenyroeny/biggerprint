@@ -1,7 +1,8 @@
 # Bigger print
 
 A tool to help print DXF files larger than 1 page
-![screenshot](https://user-images.githubusercontent.com/13182141/236898874-8204772b-612d-435c-bf1d-00d3b17aac90.png)
+![image](https://github.com/roenyroeny/biggerprint/assets/13182141/cddb85b7-d269-42af-9d96-4a69f9d2dbe0)
+
 
 Inspired by Matthias Wandel's brilliant [Big print](https://woodgears.ca/bigprint/)
 
