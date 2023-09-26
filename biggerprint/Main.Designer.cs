@@ -1,6 +1,6 @@
 ﻿namespace biggerprint
 {
-    partial class Form1
+    partial class Main
     {
         /// <summary>
         /// Required designer variable.
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
 			this.components = new System.ComponentModel.Container();
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
 			this.p_view = new System.Windows.Forms.Panel();
 			this.menuStrip1 = new System.Windows.Forms.MenuStrip();
 			this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -66,7 +66,6 @@
 			this.p_view.Name = "p_view";
 			this.p_view.Size = new System.Drawing.Size(1491, 895);
 			this.p_view.TabIndex = 1;
-			this.p_view.Click += new System.EventHandler(this.p_view_Click);
 			this.p_view.DragDrop += new System.Windows.Forms.DragEventHandler(this.p_view_DragDrop);
 			this.p_view.DragEnter += new System.Windows.Forms.DragEventHandler(this.p_view_DragEnter);
 			this.p_view.DragOver += new System.Windows.Forms.DragEventHandler(this.p_view_DragOver);
@@ -193,7 +192,6 @@
             this.portraitToolStripMenuItem,
             this.landscapeToolStripMenuItem,
             this.autoToolStripMenuItem});
-			this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
 			this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
 			this.toolStripDropDownButton1.Size = new System.Drawing.Size(119, 29);

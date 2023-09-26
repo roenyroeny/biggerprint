@@ -28,7 +28,11 @@ namespace biggerprint
 
         public override void Render(Graphics g)
         {
+            var t = g.Transform.Clone();
+            g.MultiplyTransform(transform);
             g.DrawImage((Image)bitmap, GetBounds().RectangleF);
+
+            g.Transform = t;
         }
     }
 }

@@ -97,7 +97,7 @@ namespace biggerprint
                     float endAngle = (float)Math.Atan2(pointB.Y - centerY, pointB.X - centerX);
                     float sweepAngle = endAngle - startAngle;
 
-                    g.DrawRectangle(Pens.Green, centerX, centerY, 5, 5);
+                    // g.DrawRectangle(Pens.Green, centerX, centerY, 5, 5);
 
                     // Draw the arc.
                     g.DrawArc(p, centerX - radius, centerY - radius, radius * 2, radius * 2, RadToDeg(startAngle), RadToDeg(sweepAngle));

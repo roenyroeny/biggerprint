@@ -18,7 +18,7 @@ namespace biggerprint
             Application.SetCompatibleTextRenderingDefault(false);
             new splash().ShowDialog();
 
-            var form = new Form1();
+            var form = new Main();
 
             var args = Environment.GetCommandLineArgs();
             if (args.Length > 1)
